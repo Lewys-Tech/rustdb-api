@@ -1,0 +1,36 @@
+use std::net::TcpListener;
+use std::io::{BufRead, BufReader, Write};
+
+fn main() {
+    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    println!("Listening on 127.0.0.1:8080");
+
+    for stream in listener.incoming() {
+        let mut stream = stream.unwrap();
+        let reader = BufReader::new(&stream);
+
+       let mut lines = reader.lines();
+       let request_line = lines.next().unwrap().unwrap();
+       println!("Request line: {}", request_line);
+  
+
+       let mut parts = request_line.split_whitespace();
+       let method = parts.next().unwrap_or("");
+       let path = parts.next().unwrap_or("");
+
+       println!("Methods: {}, Path: {}", method, path);
+
+
+
+       for line in lines {
+           let line = line.unwrap();
+           if line.is_empty() {
+               break;
+
+           }
+        }
+ 
+        let response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, world!";
+        stream.write_all(response.as_bytes()).unwrap();
+     }
+}
