@@ -30,7 +30,13 @@ fn main() {
            }
         }
  
-        let response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, world!";
+        let response = if path.starts_with("/get/") {
+            let key = path.strip_prefix("/get/").unwrap();
+            format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",key.len(), key)
+        } else {
+                let body = "404 Not Found";
+                format!("HTTP/1.1 404 Not Found\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
+            };
         stream.write_all(response.as_bytes()).unwrap();
      }
 }
