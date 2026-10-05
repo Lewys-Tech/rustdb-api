@@ -1,6 +1,7 @@
 use std::net::TcpListener;
 use std::io::{BufRead, BufReader, Write};
 use std::collections::HashMap;
+use std::io::Read;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -11,9 +12,9 @@ fn main() {
 
     for stream in listener.incoming() {
         let mut stream = stream.unwrap();
-        let reader = BufReader::new(&stream);
+        let mut reader = BufReader::new(&stream);
 
-       let mut lines = reader.lines();
+       let mut lines = (&mut reader).lines();
        let request_line = lines.next().unwrap().unwrap();
        println!("Request line: {}", request_line);
   
@@ -24,7 +25,7 @@ fn main() {
 
        println!("Methods: {}, Path: {}", method, path);
 
-
+       let mut content_length: usize = 0;
 
        for line in lines {
            let line = line.unwrap();
@@ -32,7 +33,19 @@ fn main() {
                break;
 
            }
+            if line.to_lowercase().starts_with("content-length:") {
+                let value = line.split(':').nth(1).unwrap().trim();
+                content_length = value.parse().unwrap_or(0);
+            }
         }
+
+        println!("Content-Length: {}", content_length);
+
+        let mut body = vec![0; content_length];
+        reader.read_exact(&mut body).unwrap();
+
+        let body = String::from_utf8_lossy(&body).to_string();
+        println!("Body: {}", body);
  
         let response = if path.starts_with("/get/") {
             let key = path.strip_prefix("/get/").unwrap();
