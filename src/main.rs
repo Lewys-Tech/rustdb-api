@@ -46,6 +46,19 @@ fn main() {
 
         let body = String::from_utf8_lossy(&body).to_string();
         println!("Body: {}", body);
+
+        let response = if method =="POST" && path == "/set" {
+            if let Some((key, value)) = body.split_once('='){
+                store.insert(key.to_string(), value.to_string());
+                let msg = "OK";
+                format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n", msg.len(), msg)
+            } else {
+                let msg = "Bad request";
+                format!("HTTP/1.1 400 Bad Request\r\nContent-Length: {}\r\n\r\n{}", msg.len(), msg)
+
+            }
+        } else if path.starts_with("/get/")
+    }
  
         let response = if path.starts_with("/get/") {
             let key = path.strip_prefix("/get/").unwrap();
