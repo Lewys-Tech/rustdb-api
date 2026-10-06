@@ -2,6 +2,35 @@ use std::net::TcpListener;
 use std::io::{BufRead, BufReader, Write};
 use std::collections::HashMap;
 use std::io::Read;
+use std::fs::OpenOptions;
+
+fn append(entry: &str) {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("db.log")
+        .unwrap();
+    writeln!(file, "{}", entry).unwrap();
+}
+
+fn load() -> HashMap<String, String> {
+    let mut store = HashMap::new();
+    if let Ok(content) = std::fs::read_to_string("db.log"){
+        for line in content.lines() {
+            let mut parts = line.splitn(2, ' ');
+            let op = parts.next().unwrap_or("");
+            let rest = parts.next().unwrap_or("")
+            match op {
+                "SET" => {
+                    let mut p = rest.splitn(2, ' ');
+                    let key = p.next().unwrap_or("").to_string();
+                    let value = p.next().unwrap_or("").to_string();
+                    store.insert(key, value);
+                }
+            }
+        }
+    }
+}
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -51,16 +80,13 @@ fn main() {
             if let Some((key, value)) = body.split_once('='){
                 store.insert(key.to_string(), value.to_string());
                 let msg = "OK";
-                format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n", msg.len(), msg)
+                format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", msg.len(), msg)
             } else {
                 let msg = "Bad request";
                 format!("HTTP/1.1 400 Bad Request\r\nContent-Length: {}\r\n\r\n{}", msg.len(), msg)
 
-            }
-        } else if path.starts_with("/get/")
-    }
- 
-        let response = if path.starts_with("/get/") {
+            }   
+        } else if path.starts_with("/get/") {
             let key = path.strip_prefix("/get/").unwrap();
             match store.get(key) {
                 Some(value) => format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", value.len(), value),
@@ -75,6 +101,5 @@ fn main() {
                 format!("HTTP/1.1 404 Not Found\r\nContent-Length: {}\r\n\r\n{}", body.len(), body)
             };
         stream.write_all(response.as_bytes()).unwrap();
-     }
+    }
 }
-
