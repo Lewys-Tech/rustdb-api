@@ -19,7 +19,7 @@ fn load() -> HashMap<String, String> {
         for line in content.lines() {
             let mut parts = line.splitn(2, ' ');
             let op = parts.next().unwrap_or("");
-            let rest = parts.next().unwrap_or("")
+            let rest = parts.next().unwrap_or("");
             match op {
                 "SET" => {
                     let mut p = rest.splitn(2, ' ');
@@ -27,17 +27,18 @@ fn load() -> HashMap<String, String> {
                     let value = p.next().unwrap_or("").to_string();
                     store.insert(key, value);
                 }
+                "DELETE" => { store.remove(rest); }
+                _ => {}
             }
         }
     }
+    store
 }
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
     println!("Listening on 127.0.0.1:8080");
-    let mut store:  HashMap<String, String> = HashMap::new();
-
-    store.insert("name".to_string(), "lewis".to_string());
+    let mut store = load();
 
     for stream in listener.incoming() {
         let mut stream = stream.unwrap();
@@ -79,6 +80,7 @@ fn main() {
         let response = if method =="POST" && path == "/set" {
             if let Some((key, value)) = body.split_once('='){
                 store.insert(key.to_string(), value.to_string());
+                append(&format!("SET {} {}", key, value));
                 let msg = "OK";
                 format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", msg.len(), msg)
             } else {
